@@ -1734,3 +1734,701 @@ ORDER BY table_name;
 SELECT
     current_database() AS database_name,
     current_schema() AS current_schema;
+/* =========================================================
+   PART 7. 15 SQL QUERIES
+   ========================================================= */
+
+SET search_path TO film_studio;
+
+
+/* Q1. Select all films */
+SELECT *
+FROM film;
+
+
+/* Q2. Select selected film columns */
+SELECT title, genre, release_year, planned_budget
+FROM film;
+
+
+/* Q3. WHERE - films currently in production */
+SELECT film_id, title, production_status
+FROM film
+WHERE production_status = 'In Production';
+
+
+/* Q4. ORDER BY - films by planned budget */
+SELECT title, planned_budget
+FROM film
+ORDER BY planned_budget DESC;
+
+
+/* Q5. LIKE - titles containing "The" */
+SELECT film_id, title
+FROM film
+WHERE title LIKE '%The%';
+
+
+/* Q6. BETWEEN - films with budget between 2 and 6 million */
+SELECT title, planned_budget
+FROM film
+WHERE planned_budget BETWEEN 2000000 AND 6000000;
+
+
+/* Q7. IN - selected genres */
+SELECT title, genre
+FROM film
+WHERE genre IN ('Drama', 'Adventure', 'Thriller');
+
+
+/* Q8. Aggregate functions */
+SELECT
+    COUNT(*) AS film_count,
+    SUM(planned_budget) AS total_budget,
+    AVG(planned_budget) AS average_budget,
+    MIN(planned_budget) AS minimum_budget,
+    MAX(planned_budget) AS maximum_budget
+FROM film;
+
+
+/* Q9. GROUP BY - number of films by company */
+SELECT
+    pc.company_name,
+    COUNT(f.film_id) AS film_count
+FROM production_company pc
+LEFT JOIN film f
+    ON pc.company_id = f.company_id
+GROUP BY pc.company_id, pc.company_name
+ORDER BY film_count DESC;
+
+
+/* Q10. HAVING - projects with expenses above 20,000 */
+SELECT
+    pp.project_name,
+    SUM(e.amount) AS total_expenses
+FROM production_project pp
+JOIN expense e
+    ON pp.project_id = e.project_id
+GROUP BY pp.project_id, pp.project_name
+HAVING SUM(e.amount) > 20000
+ORDER BY total_expenses DESC;
+
+
+/* Q11. INNER JOIN - films and production companies */
+SELECT
+    f.title,
+    f.genre,
+    pc.company_name,
+    pc.country
+FROM film f
+INNER JOIN production_company pc
+    ON f.company_id = pc.company_id
+ORDER BY f.title;
+
+
+/* Q12. LEFT JOIN - films and production projects */
+SELECT
+    f.title,
+    f.production_status,
+    pp.project_name,
+    pp.project_status
+FROM film f
+LEFT JOIN production_project pp
+    ON f.film_id = pp.film_id
+ORDER BY f.title;
+
+
+/* Q13. Multiple-table JOIN */
+SELECT
+    f.title,
+    pc.company_name,
+    pp.project_name,
+    COALESCE(SUM(e.amount), 0) AS total_expenses
+FROM film f
+JOIN production_company pc
+    ON f.company_id = pc.company_id
+JOIN production_project pp
+    ON f.film_id = pp.film_id
+LEFT JOIN expense e
+    ON pp.project_id = e.project_id
+GROUP BY
+    f.film_id,
+    f.title,
+    pc.company_name,
+    pp.project_name
+ORDER BY total_expenses DESC;
+
+
+/* Q14. Subquery - films above average budget */
+SELECT
+    title,
+    planned_budget
+FROM film
+WHERE planned_budget >
+      (SELECT AVG(planned_budget) FROM film)
+ORDER BY planned_budget DESC;
+
+
+/* Q15. Complex analytical query */
+SELECT
+    f.title,
+    f.planned_budget,
+    COALESCE(SUM(e.amount), 0) AS actual_expenses,
+    f.planned_budget - COALESCE(SUM(e.amount), 0)
+        AS remaining_budget,
+    ROUND(
+        COALESCE(SUM(e.amount), 0)
+        / NULLIF(f.planned_budget, 0) * 100,
+        2
+    ) AS expense_percentage
+FROM film f
+LEFT JOIN production_project pp
+    ON f.film_id = pp.film_id
+LEFT JOIN expense e
+    ON pp.project_id = e.project_id
+GROUP BY
+    f.film_id,
+    f.title,
+    f.planned_budget
+ORDER BY expense_percentage DESC;
+
+
+/* =========================================================
+   PART 8. 5 ANALYTICAL QUESTIONS
+   ========================================================= */
+
+
+/* A1. Which films have the highest actual expenses? */
+SELECT
+    f.title,
+    COALESCE(SUM(e.amount), 0) AS actual_expenses
+FROM film f
+LEFT JOIN production_project pp
+    ON f.film_id = pp.film_id
+LEFT JOIN expense e
+    ON pp.project_id = e.project_id
+GROUP BY f.film_id, f.title
+ORDER BY actual_expenses DESC;
+
+
+/* A2. Which films have expenses above the average
+      actual expense? */
+SELECT
+    f.title,
+    SUM(e.amount) AS actual_expenses
+FROM film f
+JOIN production_project pp
+    ON f.film_id = pp.film_id
+JOIN expense e
+    ON pp.project_id = e.project_id
+GROUP BY f.film_id, f.title
+HAVING SUM(e.amount) >
+(
+    SELECT AVG(total_expenses)
+    FROM
+    (
+        SELECT SUM(e2.amount) AS total_expenses
+        FROM production_project pp2
+        JOIN expense e2
+            ON pp2.project_id = e2.project_id
+        GROUP BY pp2.project_id
+    ) AS expense_summary
+)
+ORDER BY actual_expenses DESC;
+
+
+/* A3. Which locations are used most often? */
+SELECT
+    l.location_name,
+    l.city,
+    l.country,
+    COUNT(s.scene_id) AS scene_count
+FROM location l
+LEFT JOIN scene s
+    ON l.location_id = s.location_id
+GROUP BY
+    l.location_id,
+    l.location_name,
+    l.city,
+    l.country
+ORDER BY scene_count DESC;
+
+
+/* A4. Which actors participate in the largest number
+      of character assignments? */
+SELECT
+    p.first_name,
+    p.last_name,
+    COUNT(ca.cast_id) AS character_count
+FROM person p
+JOIN cast_assignment ca
+    ON p.person_id = ca.actor_id
+GROUP BY p.person_id, p.first_name, p.last_name
+ORDER BY character_count DESC;
+
+
+/* A5. Which films have the largest remaining budget? */
+SELECT
+    f.title,
+    f.planned_budget,
+    COALESCE(SUM(e.amount), 0) AS actual_expenses,
+    f.planned_budget - COALESCE(SUM(e.amount), 0)
+        AS remaining_budget
+FROM film f
+LEFT JOIN production_project pp
+    ON f.film_id = pp.film_id
+LEFT JOIN expense e
+    ON pp.project_id = e.project_id
+GROUP BY f.film_id, f.title, f.planned_budget
+ORDER BY remaining_budget DESC;
+
+
+/* =========================================================
+   PART 9. TWO VIEWS
+   ========================================================= */
+
+/* Delete old versions */
+DROP VIEW IF EXISTS film_budget_report CASCADE;
+DROP VIEW IF EXISTS film_cast_report CASCADE;
+
+
+/* VIEW 1. Film budget report */
+CREATE VIEW film_budget_report AS
+SELECT
+    f.film_id,
+    f.title,
+    f.planned_budget,
+    COALESCE(SUM(e.amount), 0) AS actual_expenses,
+    f.planned_budget - COALESCE(SUM(e.amount), 0)
+        AS remaining_budget
+FROM film f
+LEFT JOIN production_project pp
+    ON f.film_id = pp.film_id
+LEFT JOIN expense e
+    ON pp.project_id = e.project_id
+GROUP BY
+    f.film_id,
+    f.title,
+    f.planned_budget;
+
+
+/* VIEW 2. Film cast report */
+CREATE VIEW film_cast_report AS
+SELECT
+    f.film_id,
+    f.title,
+    COUNT(DISTINCT cr.character_id) AS character_count,
+    COUNT(DISTINCT ca.actor_id) AS actor_count,
+    COALESCE(SUM(ca.salary), 0) AS total_cast_salary
+FROM film f
+LEFT JOIN character_role cr
+    ON f.film_id = cr.film_id
+LEFT JOIN cast_assignment ca
+    ON cr.character_id = ca.character_id
+GROUP BY
+    f.film_id,
+    f.title;
+
+
+/* Test VIEW 1 */
+SELECT *
+FROM film_budget_report
+ORDER BY remaining_budget DESC;
+
+
+/* Test VIEW 2 */
+SELECT *
+FROM film_cast_report
+ORDER BY actor_count DESC;
+
+
+/* =========================================================
+   PART 10. DATA INTEGRITY TESTS
+   ========================================================= */
+
+
+/* TEST 1. Invalid foreign key */
+DO $$
+BEGIN
+    BEGIN
+        INSERT INTO film
+        (
+            company_id,
+            title,
+            genre,
+            release_year,
+            planned_budget,
+            production_status,
+            runtime_minutes
+        )
+        VALUES
+        (
+            99999,
+            'Invalid FK Film',
+            'Drama',
+            2026,
+            100000,
+            'Planned',
+            100
+        );
+
+    EXCEPTION
+        WHEN foreign_key_violation THEN
+            RAISE NOTICE
+            'TEST 1 PASSED: Invalid company_id was rejected.';
+    END;
+END $$;
+
+
+/* TEST 2. Invalid negative budget */
+DO $$
+BEGIN
+    BEGIN
+        INSERT INTO film
+        (
+            company_id,
+            title,
+            genre,
+            release_year,
+            planned_budget,
+            production_status,
+            runtime_minutes
+        )
+        VALUES
+        (
+            1,
+            'Negative Budget Film',
+            'Drama',
+            2026,
+            -5000,
+            'Planned',
+            100
+        );
+
+    EXCEPTION
+        WHEN check_violation THEN
+            RAISE NOTICE
+            'TEST 2 PASSED: Negative budget was rejected.';
+    END;
+END $$;
+
+
+/* TEST 3. Duplicate company name */
+DO $$
+BEGIN
+    BEGIN
+        INSERT INTO production_company
+        (
+            company_name,
+            country,
+            founded_year
+        )
+        VALUES
+        (
+            'Steppe Films',
+            'Kazakhstan',
+            2025
+        );
+
+    EXCEPTION
+        WHEN unique_violation THEN
+            RAISE NOTICE
+            'TEST 3 PASSED: Duplicate company name was rejected.';
+    END;
+END $$;
+
+
+/* =========================================================
+   PART 11. NORMALIZATION
+   ========================================================= */
+
+/*
+1NF:
+Each field contains one atomic value.
+Repeating groups are separated into different records.
+
+2NF:
+All non-key attributes depend on the whole primary key.
+Many-to-many relationships are separated into junction tables.
+
+Example:
+film_crew(film_id, person_id, position)
+
+3NF:
+Non-key attributes depend only on the primary key.
+Company information is stored in production_company,
+person information is stored in person,
+and film information is stored in film.
+*/
+
+
+/* =========================================================
+   PART 12. FIVE MODIFICATION SCENARIOS
+   ========================================================= */
+
+
+/* Scenario 1. Add a new person */
+
+BEGIN;
+
+INSERT INTO person
+(
+    first_name,
+    last_name,
+    date_of_birth,
+    phone,
+    email,
+    nationality
+)
+VALUES
+(
+    'Test',
+    'Person',
+    '1995-01-01',
+    '+7-700-000-0000',
+    'test.person@example.com',
+    'Kazakhstan'
+);
+
+ROLLBACK;
+
+
+/* Scenario 2. Update a person's phone */
+
+BEGIN;
+
+UPDATE person
+SET phone = '+7-701-999-9999'
+WHERE person_id = 1;
+
+ROLLBACK;
+
+
+/* Scenario 3. Add a new crew member */
+
+BEGIN;
+
+INSERT INTO film_crew
+(
+    film_id,
+    person_id,
+    position,
+    start_date
+)
+VALUES
+(
+    1,
+    10,
+    'Production Assistant',
+    CURRENT_DATE
+);
+
+ROLLBACK;
+
+
+/* Scenario 4. Update shooting schedule status */
+
+BEGIN;
+
+UPDATE shooting_schedule
+SET session_status = 'Completed'
+WHERE schedule_id = 2;
+
+ROLLBACK;
+
+
+/* Scenario 5. Add a new film release */
+
+BEGIN;
+
+INSERT INTO film_release
+(
+    film_id,
+    release_country,
+    release_date,
+    distribution_type,
+    box_office_revenue
+)
+VALUES
+(
+    1,
+    'Testland',
+    '2027-02-01',
+    'Cinema',
+    0
+);
+
+ROLLBACK;
+
+
+
+/* =========================================================
+   PART 13. THREE REPORTS
+   ========================================================= */
+
+
+/* REPORT 1. Financial Report
+   Shows planned budget, actual expenses
+   and remaining budget for each film.
+*/
+
+SELECT
+    title,
+    planned_budget,
+    actual_expenses,
+    remaining_budget
+FROM film_budget_report
+ORDER BY remaining_budget DESC;
+
+
+/* REPORT 2. Cast Report
+   Shows number of characters, actors
+   and total cast salary for each film.
+*/
+
+SELECT
+    title,
+    character_count,
+    actor_count,
+    total_cast_salary
+FROM film_cast_report
+ORDER BY total_cast_salary DESC;
+
+
+/* REPORT 3. Production Activity Report
+   Shows scenes, shooting sessions
+   and crew members for each film.
+*/
+
+SELECT
+    f.title,
+    COUNT(DISTINCT s.scene_id) AS scene_count,
+    COUNT(DISTINCT ss.schedule_id) AS shooting_sessions,
+    COUNT(DISTINCT fc.crew_id) AS crew_members
+FROM film f
+
+LEFT JOIN scene s
+    ON f.film_id = s.film_id
+
+LEFT JOIN shooting_schedule ss
+    ON f.film_id = ss.film_id
+
+LEFT JOIN film_crew fc
+    ON f.film_id = fc.film_id
+
+GROUP BY
+    f.film_id,
+    f.title
+
+ORDER BY
+    shooting_sessions DESC;
+
+
+/* =========================================================
+   END OF PART 13
+   ========================================================= */
+
+
+/* =========================================================
+   PART 14. FINAL DATABASE STRUCTURE / RECORD COUNTS
+   ========================================================= */
+
+
+/* Record count for all 13 tables */
+
+SELECT
+    'production_company' AS table_name,
+    COUNT(*) AS record_count
+FROM production_company
+
+UNION ALL
+
+SELECT
+    'film',
+    COUNT(*)
+FROM film
+
+UNION ALL
+
+SELECT
+    'person',
+    COUNT(*)
+FROM person
+
+UNION ALL
+
+SELECT
+    'production_project',
+    COUNT(*)
+FROM production_project
+
+UNION ALL
+
+SELECT
+    'film_crew',
+    COUNT(*)
+FROM film_crew
+
+UNION ALL
+
+SELECT
+    'character_role',
+    COUNT(*)
+FROM character_role
+
+UNION ALL
+
+SELECT
+    'cast_assignment',
+    COUNT(*)
+FROM cast_assignment
+
+UNION ALL
+
+SELECT
+    'location',
+    COUNT(*)
+FROM location
+
+UNION ALL
+
+SELECT
+    'scene',
+    COUNT(*)
+FROM scene
+
+UNION ALL
+
+SELECT
+    'shooting_schedule',
+    COUNT(*)
+FROM shooting_schedule
+
+UNION ALL
+
+SELECT
+    'contract',
+    COUNT(*)
+FROM contract
+
+UNION ALL
+
+SELECT
+    'expense',
+    COUNT(*)
+FROM expense
+
+UNION ALL
+
+SELECT
+    'film_release',
+    COUNT(*)
+FROM film_release
+
+ORDER BY
+    table_name;
+
+
+/* =========================================================
+   END OF PART 14
+   ========================================================= */
