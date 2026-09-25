@@ -1,186 +1,108 @@
-# Yerbolatkyzy_Kaussar_4.1
-PART 1. REQUIREMENTS ANALYSIS
-1.1. Description of the System
-Purpose of the System
+Film Production Studio Database
 
-The purpose of the Film Production Studio Database System is to manage and organize information related to film production. The system stores information about films, production companies, actors, crew members, characters, filming locations, scenes, shooting schedules, contracts, expenses, and film releases.
+Student: Kaussar Yerbolatkyzy
+DBMS: PostgreSQL
+Database: film_studio_db
+Schema: film_studio
 
-The database helps a film production studio organize its production activities and provides quick access to important information.
+Final structure
 
-System Users
+The database contains 13 related tables:
 
-The system can be used by:
+production_company
 
-Producers
+film
 
-Film directors
+person
 
-Casting managers
+production_project
 
-Production managers
+film_crew
 
-Accountants
+character_role
 
-Human resources employees
+cast_assignment
 
-Location managers
+location
 
-Studio administrators
+scene
 
-Information That Must Be Stored
+shooting_schedule
 
-The database must store the following types of information:
+contract
 
-Information about production companies
+expense
 
-Information about films
+film_release
 
-Information about actors and other personnel
+Main relationships
 
-Information about film characters
+production_company 1 film
 
-Information about crew members and their positions
+film 1:1 production_project
 
-Information about production projects
+film 1 film_crew
 
-Information about filming locations
+person 1 film_crew
 
-Information about film scenes
+film 1 character_role
 
-Information about shooting schedules
+character_role 1 cast_assignment
 
-Information about contracts
+person 1 cast_assignment
 
-Information about production expenses
+film 1 scene
 
-Information about film releases
+location 1 scene
 
-Operations That Users Should Be Able to Perform
+film 1 shooting_schedule
 
-Users should be able to:
+production_project 1 contract
 
-Add new films to the database
+production_project 1 expense
 
-Add new actors and crew members
+film 1 film_release
 
-Update film information
+Many-to-many relationships are resolved through film_crew and cast_assignment.
 
-Assign actors to characters
+Constraints
 
-Assign crew members to films
+The database uses:
 
-Add filming locations
+PRIMARY KEY
 
-Create and update scenes
+FOREIGN KEY
 
-Create shooting schedules
+NOT NULL
 
-Add and update contracts
+UNIQUE
 
-Record production expenses
+DEFAULT
 
-Record film releases
+CHECK
 
-Search for films and personnel
+Views
 
-Delete selected records when necessary
+film_budget_report
 
-Generate production and financial reports
+film_cast_report
 
-Information Available for Analysis
+Reports
 
-The database should provide information that can be used for analysis, including:
+Financial Report
 
-The number of films produced by each company
+Cast Report
 
-Film budgets
+Production Activity Report
 
-Total production expenses
+Normalization
 
-Average film budget
+The design satisfies 1NF, 2NF and 3NF by using atomic fields, separate entity tables, associative tables for many-to-many relationships, and removal of repeated/transitive data.
 
-The number of scenes in each film
+DBeaver
 
-The number of employees working on each film
+Run the SQL script in the film_studio_db database. Then refresh:
 
-The most frequently used filming locations
+film_studio_db → Schemas → film_studio → Tables
 
-Actor participation in films
-
-Production activity
-
-Film release information
-
-Comparison between planned budgets and actual expenses
-
-1.2. Main Entities
-
-The database will contain the following main entities:
-
-No.	Entity	Purpose
-1	Production_Company	Stores information about companies that produce films.
-2	Film	Stores basic information about each film.
-3	Person	Stores information about actors, directors, producers, and other personnel.
-4	Production_Project	Stores information about individual production projects and their budgets and statuses.
-5	Film_Crew	Connects personnel with films and stores their positions.
-6	Character_Role	Stores information about characters appearing in films.
-7	Cast_Assignment	Connects actors with characters and films.
-8	Location	Stores information about filming locations.
-9	Scene	Stores information about individual scenes of a film.
-10	Shooting_Schedule	Stores information about planned and completed shooting sessions.
-11	Contract	Stores contracts between personnel and production projects.
-12	Expense	Stores financial expenses related to film production.
-13	Film_Release	Stores information about film releases in different countries and through different distribution channels.
-Entity Descriptions
-
-1. Production_Company
-
-This entity stores information about production companies, including their names, countries, founding years, and contact information.
-
-2. Film
-
-This entity stores information about films, including title, genre, release year, planned budget, production status, and runtime.
-
-3. Person
-
-This entity stores information about people who participate in film production, such as actors, directors, producers, cinematographers, and other staff.
-
-4. Production_Project
-
-This entity stores information about individual production projects, including project name, start date, end date, status, and allocated budget.
-
-5. Film_Crew
-
-This entity connects people with films and stores their positions, such as director, producer, cinematographer, or production designer.
-
-6. Character_Role
-
-This entity stores information about fictional characters appearing in films.
-
-7. Cast_Assignment
-
-This entity connects actors with the characters they play and stores information about their salaries.
-
-8. Location
-
-This entity stores information about places where films are produced, including cities, countries, location types, and daily rental costs.
-
-9. Scene
-
-This entity stores information about individual film scenes, including scene number, description, location, and estimated duration.
-
-10. Shooting_Schedule
-
-This entity stores information about scheduled filming sessions, including dates, starting and ending times, and session status.
-
-11. Contract
-
-This entity stores contracts between production personnel and films, including contract type, dates, and contract value.
-
-12. Expense
-
-This entity stores financial expenses related to film production, such as equipment rental, transportation, catering, locations, security, and insurance.
-
-13. Film_Release
-
-This entity stores information about film releases, including release country, release date, distribution type, and box-office revenue.
+The final ER diagram should be generated from these 13 tables.
